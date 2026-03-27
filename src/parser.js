@@ -83,13 +83,9 @@ function readBalanced(src, i, open, close) {
 // átomo do DSL: string, bloco balanceado, ou token até separador
 function readAtom(src, i) {
   i = skipWS(src, i);
-  if (i >= src.length){
-
-      console.log("❌ FAIL at node:", node);
-      console.log("Cursor at:", i);
-      console.log("Remaining:", src.slice(i, i + 60));
-      return { ok: false }
-    };
+  if (i >= src.length) {
+    return { ok: false };
+  }
 
   const ch = src[i];
 
@@ -113,12 +109,9 @@ function readAtom(src, i) {
 
     j++;
   }
-  if (j === i){
-    console.log("❌ FAIL at node:", node);
-      console.log("Cursor at:", i);
-      console.log("Remaining:", src.slice(i, i + 60));
-      return { ok: false }
-    };
+  if (j === i) {
+    return { ok: false };
+  }
   return { ok: true, text: src.slice(i, j), next: j };
 }
 
@@ -170,12 +163,9 @@ function matchNodesOnSource(nodes, src, i0, ctx) {
 
     if (node.kind === "lit") {
       const m = matchLiteralToken(src, i, node.t);
-      if (!m.ok){
-        console.log("❌ FAIL at node:", node);
-      console.log("Cursor at:", i);
-      console.log("Remaining:", src.slice(i, i + 60));
-      return { ok: false }
-    };
+      if (!m.ok) {
+        return { ok: false };
+      }
       i = m.next;
       continue;
     }
@@ -208,6 +198,15 @@ function matchNodesOnSource(nodes, src, i0, ctx) {
       // 🔹 delimitadores balanceados
       const ch = src[i];
 
+      if (src.startsWith("[>", i)) {
+        const b = readLispBlock(src, i);
+        if (!b.ok) return { ok: false };
+
+        ctx.scalars[node.name] = b.text.trim();
+        i = b.next;
+        continue;
+      }
+
       if (ch === "(" || ch === "{" || ch === "[") {
 
         const pairs = { "(": ")", "{": "}", "[": "]" };
@@ -234,19 +233,13 @@ function matchNodesOnSource(nodes, src, i0, ctx) {
 
     if (node.kind === "block") {
       i = skipWS(src, i);
-      if (src[i] !== node.open){
-        console.log("❌ FAIL at node:", node);
-      console.log("Cursor at:", i);
-      console.log("Remaining:", src.slice(i, i + 60));
-      return { ok: false }
-    };
+      if (src[i] !== node.open) {
+        return { ok: false };
+      }
       const b = readBalanced(src, i, node.open, node.close);
-      if (!b.ok){
-        console.log("❌ FAIL at node:", node);
-      console.log("Cursor at:", i);
-      console.log("Remaining:", src.slice(i, i + 60));
-      return { ok: false }
-    };
+      if (!b.ok) {
+        return { ok: false };
+      }
 
       // captura sem bordas
       ctx.scalars[node.name] = b.text.slice(1, -1).trim();
@@ -255,9 +248,42 @@ function matchNodesOnSource(nodes, src, i0, ctx) {
     }
 
     if (node.kind === "rest") {
-      // captura “o resto” até newline ou ; (whitespace-insensitive)
+      const start = skipWS(src, i);
+
+      if (src.startsWith("[>", start)) {
+        const block = readLispBlock(src, start);
+        if (!block.ok) return { ok: false };
+        ctx.scalars[node.name] = block.text.trim();
+        i = block.next;
+        continue;
+      }
+
+      if (src[start] === "`") {
+        const tpl = readTemplateLiteral(src, start);
+        if (!tpl.ok) return { ok: false };
+        ctx.scalars[node.name] = tpl.text.trim();
+        i = tpl.next;
+        continue;
+      }
+
+      if (src[start] === '"' || src[start] === "'") {
+        const str = readString(src, start);
+        if (!str.ok) return { ok: false };
+        ctx.scalars[node.name] = str.text.trim();
+        i = str.next;
+        continue;
+      }
+
+      if (src[start] === "(" || src[start] === "{" || src[start] === "[") {
+        const pairs = { "(": ")", "{": "}", "[": "]" };
+        const balanced = readBalanced(src, start, src[start], pairs[src[start]]);
+        if (!balanced.ok) return { ok: false };
+        ctx.scalars[node.name] = balanced.text.trim();
+        i = balanced.next;
+        continue;
+      }
+
       let j = i;
-      // não pula WS aqui; o “resto” pode começar com '(' etc.
       while (j < src.length) {
         const ch = src[j];
         if (ch === "\n") break;
@@ -274,12 +300,9 @@ function matchNodesOnSource(nodes, src, i0, ctx) {
       const innerCtx = { scalars: local, repeats: [] };
 
       const r = matchNodesOnSource(node.nodes, src, i, innerCtx);
-      if (!r.ok){
-        console.log("❌ FAIL at node:", node);
-      console.log("Cursor at:", i);
-      console.log("Remaining:", src.slice(i, i + 60));
-      return { ok: false }
-    };
+      if (!r.ok) {
+        return { ok: false };
+      }
 
       // promover variáveis capturadas
       for (const k in local) {
@@ -333,11 +356,8 @@ function matchNodesOnSource(nodes, src, i0, ctx) {
     }
 
    {
-    console.log("❌ FAIL at node:", node);
-      console.log("Cursor at:", i);
-      console.log("Remaining:", src.slice(i, i + 60));
-      return { ok: false }
-    };
+      return { ok: false };
+    }
   }
 
   return { ok: true, next: i };
@@ -622,12 +642,12 @@ function parsePatternRaw(src) {
 
   while (i < src.length) {
 
-    const nextRep  = src.indexOf("$(", i);
-    const nextRest = src.indexOf("[$", i);
+    const nextRep = src.indexOf("$(", i);
+    const nextBracket = src.indexOf("[$", i);
+    const nextParen = src.indexOf("($", i);
 
-    let next = -1;
-    if (nextRep !== -1 && nextRest !== -1) next = Math.min(nextRep, nextRest);
-    else next = Math.max(nextRep, nextRest);
+    const candidates = [nextRep, nextBracket, nextParen].filter(idx => idx !== -1);
+    const next = candidates.length ? Math.min(...candidates) : -1;
 
     if (next === -1) {
       flushLiteral(src.slice(i));
@@ -647,6 +667,18 @@ function parsePatternRaw(src) {
       continue;
     }
 
+    const parenRestMatch = src.slice(i).match(/^\(\s*\$([a-zA-Z_]\w*)\.{3}\s*\)/);
+    if (parenRestMatch) {
+      nodes.push({
+        kind: "block",
+        name: parenRestMatch[1],
+        open: "(",
+        close: ")"
+      });
+      i += parenRestMatch[0].length;
+      continue;
+    }
+
     // BLOCK: [$var]
     const blockMatch = src.slice(i).match(/^\[\s*\$([a-zA-Z_]\w*)\s*\]/);
     if (blockMatch) {
@@ -657,6 +689,18 @@ function parsePatternRaw(src) {
         close: "]"
       });
       i += blockMatch[0].length;
+      continue;
+    }
+
+    const parenBlockMatch = src.slice(i).match(/^\(\s*\$([a-zA-Z_]\w*)\s*\)/);
+    if (parenBlockMatch) {
+      nodes.push({
+        kind: "block",
+        name: parenBlockMatch[1],
+        open: "(",
+        close: ")"
+      });
+      i += parenBlockMatch[0].length;
       continue;
     }
 
@@ -725,6 +769,8 @@ function collectVars(nodes) {
   const s = new Set();
   for (const n of nodes) {
     if (n.kind === "ph") s.add(n.name);
+    if (n.kind === "rest") s.add(n.name);
+    if (n.kind === "block") s.add(n.name);
     if (n.kind === "rep") for (const v of n.vars) s.add(v);
   }
   return [...s];
@@ -733,7 +779,6 @@ function collectVars(nodes) {
 const TEMPLATE_IDENT_RE = /\$\`([\s\S]*?)\`/g;
 
 function applyCompileTimeMutations(src) {
-  console.log("COMPILE_TIME_VARS before:", COMPILE_TIME_VARS);
 
   src = src.replace(/^\s*([A-Za-z_\p{L}][A-Za-z0-9_\p{L}]*)\s*\+=\s*(\d+)\s*;?/gmu,
     (_, name, value) => {
@@ -746,10 +791,9 @@ function applyCompileTimeMutations(src) {
     }
   );
 
-  console.log("COMPILE_TIME_VARS after:", COMPILE_TIME_VARS);
   return src;
 }
-function expandTemplateIdentifiers(src, matchCtx, DEBUG_TPL = true) {
+function expandTemplateIdentifiers(src, matchCtx, DEBUG_TPL = false) {
   const log = (...a) => DEBUG_TPL && console.log("[TPL]", ...a);
 
   log("ENTER expandTemplateIdentifiers");
@@ -976,12 +1020,9 @@ function matchNodes(nodes, tokens, i0) {
   };
 
   for (const n of nodes) {
-    if (!matchOne(n)){
-      console.log("❌ FAIL at node:", node);
-      console.log("Cursor at:", i);
-      console.log("Remaining:", src.slice(i, i + 60));
-      return { ok: false }
-    };
+    if (!matchOne(n)) {
+      return { ok: false };
+    }
   }
 
   return { ok: true, next: i, scalars, repeats };
@@ -1066,22 +1107,47 @@ function escapeTemplatesInsideAnnotatedJavascript(src) {
   return out;
 }
 
+function expandIndexedRepeatPlaceholders(src, matchCtx) {
+  return src.replace(
+    /\$([A-Za-z_\p{L}][A-Za-z0-9_\p{L}]*)\[(last|-?\d+)\]/gu,
+    (full, name, indexExpr) => {
+      const rep = matchCtx?.repeats?.find(r => r.vars.has(name));
+      if (!rep) return full;
+
+      const rawIndex = indexExpr === "last"
+        ? rep.items.length - 1
+        : Number(indexExpr);
+      const index = rawIndex < 0 ? rep.items.length + rawIndex : rawIndex;
+
+      if (!Number.isInteger(index) || index < 0 || index >= rep.items.length) {
+        return full;
+      }
+
+      const item = rep.items[index];
+      if (!item || !(name in item)) {
+        return full;
+      }
+
+      return item[name];
+    }
+  );
+}
+
 
 
 function expandBody(bodySrc, matchCtx) {
-  console.log("BODY SRC:\n", bodySrc);
   let out = bodySrc;
 
-  console.log("COMPILE_TIME_VARS before:", COMPILE_TIME_VARS);
-  // 1️⃣ primeiro executar mutações compile-time
   out = applyCompileTimeMutations(out);
-  console.log("COMPILE_TIME_VARS after:", COMPILE_TIME_VARS);
 
-  // 2️⃣ depois expandir templates
-  out = expandBodyReps(out, matchCtx);
+  while (true) {
+    const next = expandBodyReps(out, matchCtx);
+    if (next === out) break;
+    out = next;
+  }
   out = expandTemplateIdentifiers(out, matchCtx);
+  out = expandIndexedRepeatPlaceholders(out, matchCtx);
 
-  // 3️⃣ placeholders simples
   out = out.replace(PH_RE, (_, name) => {
     if (name in matchCtx.scalars) return matchCtx.scalars[name];
     return `$${name}`;
@@ -1091,9 +1157,32 @@ function expandBody(bodySrc, matchCtx) {
 }
 
 function expandBodyReps(bodySrc, matchCtx) {
+  const stripCommonIndent = (text) => {
+    const trimmed = text
+      .replace(/^\r?\n/u, "")
+      .replace(/\r?\n[ \t]*$/u, "");
+
+    const lines = trimmed.split(/\r?\n/u);
+    const indents = lines
+      .filter(line => line.trim().length > 0)
+      .map(line => (line.match(/^[ \t]*/u)?.[0].length ?? 0));
+
+    const minIndent = indents.length ? Math.min(...indents) : 0;
+
+    return lines
+      .map(line => line.slice(Math.min(minIndent, line.length)))
+      .join("\n");
+  };
+
   return bodySrc.replace(
-    /^([ \t]*)\$\(([\s\S]*?)\)\.\.\./gm,
-    (_, indent, inner) => {
+    /\$\(([\s\S]*?)\)\.\.\.(?:\[(last|-?\d+)\])?/g,
+    (full, inner, indexExpr, offset, source) => {
+      const lineStart = Math.max(
+        source.lastIndexOf("\n", offset - 1),
+        source.lastIndexOf("\r", offset - 1)
+      );
+      const linePrefix = source.slice(lineStart + 1, offset);
+      const lineIndent = (linePrefix.match(/^[ \t]*/u)?.[0]) ?? "";
 
       // detectar variáveis do template
       const varsInTemplate = Array.from(
@@ -1106,16 +1195,33 @@ function expandBodyReps(bodySrc, matchCtx) {
 
       if (!rep) return "";
 
-      return rep.items.map(item => {
-        let segment = inner;
+      const template = stripCommonIndent(inner);
+      const segments = rep.items.map(item => {
+        let segment = template;
 
         for (const key in item) {
           const re = new RegExp(`\\$${key}\\b`, "g");
           segment = segment.replace(re, item[key]);
         }
 
-        return indent + segment.trim();
-      }).join("\n");
+        return segment;
+      });
+
+      if (indexExpr !== undefined) {
+        const index = indexExpr === "last"
+          ? segments.length - 1
+          : Number(indexExpr) < 0
+            ? segments.length + Number(indexExpr)
+            : Number(indexExpr);
+
+        if (!Number.isInteger(index) || index < 0 || index >= segments.length) {
+          return "";
+        }
+
+        return segments[index].trim().replace(/\n/g, `\n${lineIndent}`);
+      }
+
+      return segments.join(`\n${lineIndent}`);
     }
   );
 }
@@ -1134,6 +1240,21 @@ export function parseMacrosFromBlock(block) {
     const patternSrc = mm[1].trim();
     const bodySrc = mm[2];
 
+    const lispBlockMatch = patternSrc.match(/^\[>\s*([\s\S]*?)\s*\]$/u);
+    if (lispBlockMatch) {
+      macros.push({
+        head: "[>",
+        patternSrc,
+        pattern: [],
+        bodySrc,
+        special: {
+          kind: "lisp_block",
+          innerPattern: parsePattern(lispBlockMatch[1].trim())
+        }
+      });
+      continue;
+    }
+
     const pattern = parsePattern(patternSrc);
 
     const head = pattern.find(n => n.kind === "lit")?.t;
@@ -1149,6 +1270,10 @@ export function parseMacrosFromBlock(block) {
 
 function escapeRegex(s) {
   return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+function isIdentifierHead(head) {
+  return /^[A-Za-z_$\p{L}][A-Za-z0-9_$\p{L}]*$/u.test(head);
 }
 
 // function findInvocationSlice(code, startIdx, patternSrc) {
@@ -1219,6 +1344,141 @@ function indentBlock(text, indent) {
     .join("\n");
 }
 
+function isInsideTemplateInterpolation(src, targetIdx) {
+  let i = 0;
+  let inSingle = false;
+  let inDouble = false;
+  let inTemplate = false;
+  let templateExprDepth = 0;
+
+  while (i < targetIdx) {
+    const ch = src[i];
+    const next = src[i + 1];
+
+    if (inSingle) {
+      if (ch === "\\" && i + 1 < targetIdx) {
+        i += 2;
+        continue;
+      }
+      if (ch === "'") inSingle = false;
+      i++;
+      continue;
+    }
+
+    if (inDouble) {
+      if (ch === "\\" && i + 1 < targetIdx) {
+        i += 2;
+        continue;
+      }
+      if (ch === '"') inDouble = false;
+      i++;
+      continue;
+    }
+
+    if (inTemplate) {
+      if (ch === "\\" && i + 1 < targetIdx) {
+        i += 2;
+        continue;
+      }
+
+      if (ch === "`" && templateExprDepth === 0) {
+        inTemplate = false;
+        i++;
+        continue;
+      }
+
+      if (ch === "$" && next === "{") {
+        templateExprDepth++;
+        i += 2;
+        continue;
+      }
+
+      if (ch === "}" && templateExprDepth > 0) {
+        templateExprDepth--;
+        i++;
+        continue;
+      }
+
+      if (ch === "'" && templateExprDepth > 0) {
+        inSingle = true;
+        i++;
+        continue;
+      }
+
+      if (ch === '"' && templateExprDepth > 0) {
+        inDouble = true;
+        i++;
+        continue;
+      }
+
+      i++;
+      continue;
+    }
+
+    if (ch === "'") {
+      inSingle = true;
+      i++;
+      continue;
+    }
+
+    if (ch === '"') {
+      inDouble = true;
+      i++;
+      continue;
+    }
+
+    if (ch === "`") {
+      inTemplate = true;
+      i++;
+      continue;
+    }
+
+    i++;
+  }
+
+  return inTemplate && templateExprDepth > 0;
+}
+
+function findLastDeclaredIdentifier(src) {
+  const declRe =
+    /(?:^|[\r\n;]\s*)(?:const|let|var)\s+([A-Za-z_$\p{L}][A-Za-z0-9_$\p{L}]*)\s*=/gu;
+
+  let lastName = null;
+  let match;
+
+  while ((match = declRe.exec(src)) !== null) {
+    lastName = match[1];
+  }
+
+  return lastName;
+}
+
+function looksLikePlainExpression(src) {
+  const trimmed = src.trim();
+  if (!trimmed) return false;
+
+  return !/^(const|let|var|if|for|while|switch|try|class|function|return|import|export)\b/u.test(trimmed);
+}
+
+function toExpressionExpansion(expanded) {
+  const trimmed = expanded.trim().replace(/;+\s*$/u, "");
+
+  if (!trimmed) return "undefined";
+
+  if (looksLikePlainExpression(trimmed)) {
+    return `(${trimmed})`;
+  }
+
+  const lastDeclared = findLastDeclaredIdentifier(trimmed);
+  const body = trimmed.endsWith(";") ? trimmed : `${trimmed};`;
+
+  if (lastDeclared) {
+    return `(() => { ${body} return ${lastDeclared}; })()`;
+  }
+
+  return `(() => { ${body} return undefined; })()`;
+}
+
 function expandMacroExpressions(code, macros) {
   let out = "";
   let i = 0;
@@ -1247,6 +1507,8 @@ function expandMacroExpressions(code, macros) {
       i++;
     }
 
+    const insideTemplateInterpolation = isInsideTemplateInterpolation(code, idx);
+
     // tentar casar macro dentro da expressão
     const tokens = tokenize(expr.trim());
     let replaced = false;
@@ -1262,7 +1524,9 @@ function expandMacroExpressions(code, macros) {
       let expanded = expandBody(mac.bodySrc, res);
       expanded = expandMacros(expanded, macros);
       expanded = expandTemplateIdentifiers(expanded, res);
-      out += expanded.trim();
+      out += insideTemplateInterpolation
+        ? toExpressionExpansion(expanded)
+        : expanded.trim();
       replaced = true;
       break;
     }
@@ -1279,68 +1543,88 @@ function expandMacroExpressions(code, macros) {
 
 function applyMacrosOnce(code, macros) {
   for (const mac of macros) {
-    const headRe = new RegExp(`^([ \\t]*)${escapeRegex(mac.head)}\\b`, "gm");
+    const headRe = isIdentifierHead(mac.head)
+      ? new RegExp(`\\b${escapeRegex(mac.head)}\\b`, "g")
+      : new RegExp(escapeRegex(mac.head), "g");
     let m;
 
     while ((m = headRe.exec(code)) !== null) {
-
-      const indent = m[1];
       const startIdx = m.index;
+      const lineStart = code.lastIndexOf("\n", startIdx - 1) + 1;
+      const linePrefix = code.slice(lineStart, startIdx);
+      const isIndentedLineStart = /^[ \t]*$/u.test(linePrefix);
+      const indent = isIndentedLineStart ? linePrefix : "";
+      const replaceStartIdx = isIndentedLineStart ? lineStart : startIdx;
 
-      if(DEBUG_REP){
+      if (DEBUG_REP) {
         console.log("\n=== TRY MACRO ===");
         console.log("Macro:", mac.head);
-        console.log("StartIdx:", startIdx);
+        console.log("StartIdx:", replaceStartIdx);
         console.log("Snippet:\n", code.slice(startIdx, startIdx + 120));
         console.log("=================\n");
       }
+
       const ctx = { scalars: {}, repeats: [] };
+      let endIdx;
 
-      // pular o head já garantido
-      const afterHead = startIdx + indent.length + mac.head.length;
+      if (mac.special?.kind === "lisp_block") {
+        const block = readLispBlock(code, startIdx);
+        if (!block.ok) {
+          headRe.lastIndex = startIdx + 1;
+          continue;
+        }
 
-      // remover o primeiro node (literal head) do pattern
-      const patternWithoutHead = mac.pattern.slice(1);
-      if(DEBUG_REP){
-        console.log("Pattern FULL:", mac.pattern);
+        const res = matchNodesOnSource(
+          mac.special.innerPattern,
+          block.inner,
+          0,
+          ctx
+        );
+
+        if (!res.ok || skipWS(block.inner, res.next) !== block.inner.length) {
+          headRe.lastIndex = startIdx + 1;
+          continue;
+        }
+
+        endIdx = block.next;
+      } else {
+        const afterHead = startIdx + mac.head.length;
+        const patternWithoutHead = mac.pattern.slice(1);
+        if (DEBUG_REP) {
+          console.log("Pattern FULL:", mac.pattern);
+        }
+
+        const res = matchNodesOnSource(
+          patternWithoutHead,
+          code,
+          afterHead,
+          ctx
+        );
+
+        if (!res.ok) {
+          console.log("MATCH FAILED for macro:", mac.head);
+          console.log("Pattern:", patternWithoutHead);
+          console.log("Remaining source:", code.slice(afterHead, afterHead + 120));
+          headRe.lastIndex = startIdx + 1;
+          continue;
+        }
+
+        endIdx = res.next;
       }
-
-      const res = matchNodesOnSource(
-        patternWithoutHead,
-        code,
-        afterHead,
-        ctx
-      );
-      
-
-      if (!res.ok) {
-        console.log("❌ MATCH FAILED for macro:", mac.head);
-        console.log("Pattern:", patternWithoutHead);
-        console.log("Remaining source:", code.slice(afterHead, afterHead + 120));
-        headRe.lastIndex = startIdx + 1;
-        continue;
-      }
-
-      const endIdx = res.next;
 
       const hasTrailingNewline =
         endIdx < code.length && code[endIdx] === "\n";
 
       let expanded = expandBody(mac.bodySrc, ctx);
-
-      // 🔥 AQUI É O LUGAR CERTO
       expanded = applyCompileTimeMutations(expanded);
-
       expanded = expandMacroExpressions(expanded, macros);
       expanded = expanded.trimEnd();
-
 
       const withIndent =
         indentBlock(expanded, indent) +
         (hasTrailingNewline ? "\n" : "");
-        
 
-      return code.slice(0, startIdx) + withIndent + code.slice(endIdx);
+      return code.slice(0, replaceStartIdx) + withIndent + code.slice(endIdx);
     }
   }
 
@@ -1364,12 +1648,34 @@ export function expandMacros(code, macros) {
 
 
 export function stripMacrosBlock(source) {
+  const bounds = findMacrosBlockBounds(source);
+  if (!bounds) return { macrosBlock: "", output: source };
 
+  return {
+    macrosBlock: bounds.macrosBlock,
+    output: source.slice(0, bounds.start) + source.slice(bounds.end)
+  };
+}
+
+export function stripMacrosBlockPreserveLines(source) {
+  const bounds = findMacrosBlockBounds(source);
+  if (!bounds) return { macrosBlock: "", output: source };
+
+  const removed = source.slice(bounds.start, bounds.end);
+  const placeholder = removed.replace(/[^\r\n]/g, " ");
+
+  return {
+    macrosBlock: bounds.macrosBlock,
+    output: source.slice(0, bounds.start) + placeholder + source.slice(bounds.end)
+  };
+}
+
+function findMacrosBlockBounds(source) {
   const match = source.match(/macros\s*:\s*\{/);
-  if (!match) return { macrosBlock: "", output: source };
+  if (!match) return null;
 
-  const idx = match.index;
-  const braceStart = source.indexOf("{", idx);
+  const start = match.index;
+  const braceStart = source.indexOf("{", start);
 
   let i = braceStart;
   let depth = 0;
@@ -1400,16 +1706,83 @@ export function stripMacrosBlock(source) {
       depth--;
       if (depth === 0) {
         const end = i + 1;
-        const macrosBlock = source.slice(braceStart + 1, i);
-        const output =
-          source.slice(0, idx) + source.slice(end);
-        return { macrosBlock, output };
+        return {
+          start,
+          end,
+          macrosBlock: source.slice(braceStart + 1, i)
+        };
       }
     }
     i++;
   }
 
   throw new Error("Unclosed macros block");
+}
+
+function readLispBlock(src, start) {
+  if (!src.startsWith("[>", start)) return { ok: false };
+
+  let i = start + 2;
+  const stack = ["lisp"];
+
+  while (i < src.length) {
+    const ch = src[i];
+
+    if (ch === '"' || ch === "'" || ch === "`") {
+      const s = readString(src, i);
+      i = s.next;
+      continue;
+    }
+
+    if (src.startsWith("[>", i)) {
+      stack.push("lisp");
+      i += 2;
+      continue;
+    }
+
+    if (ch === "(") {
+      stack.push(")");
+      i++;
+      continue;
+    }
+
+    if (ch === "{") {
+      stack.push("}");
+      i++;
+      continue;
+    }
+
+    if (ch === "[") {
+      stack.push("]");
+      i++;
+      continue;
+    }
+
+    if (ch === ")" || ch === "}" || ch === "]") {
+      const expected = stack[stack.length - 1];
+      if (
+        (ch === ")" && expected === ")") ||
+        (ch === "}" && expected === "}") ||
+        (ch === "]" && (expected === "]" || expected === "lisp"))
+      ) {
+        stack.pop();
+        i++;
+        if (!stack.length) {
+          return {
+            ok: true,
+            text: src.slice(start, i),
+            inner: src.slice(start + 2, i - 1),
+            next: i
+          };
+        }
+        continue;
+      }
+    }
+
+    i++;
+  }
+
+  return { ok: false };
 }
 
 let COMPILE_TIME_VARS = {};
@@ -1428,27 +1801,96 @@ function extractCompileTimeDeclares(block) {
   return { cleanedMacrosBlock: cleaned, compileTimeVars };
 }
 
+function extractMacroImports(source) {
+  const imports = [];
+  const importRe =
+    /^\s*import\s+macros(?:\s+from)?\s+["']([^"']+)["']\s*;?\s*$/gmu;
+
+  let match;
+  while ((match = importRe.exec(source)) !== null) {
+    imports.push(match[1]);
+  }
+
+  return imports;
+}
+
+function stripMacroImports(source) {
+  return source.replace(
+    /^\s*import\s+macros(?:\s+from)?\s+["'][^"']+["']\s*;?\s*$/gmu,
+    ""
+  );
+}
+
+function resolveMacroImport(specifier, sourcePath) {
+  const baseDir = sourcePath
+    ? path.dirname(path.resolve(sourcePath))
+    : process.cwd();
+
+  return path.resolve(baseDir, specifier);
+}
+
+function loadMacroEnvironmentFromSource(source, options = {}) {
+  const sourcePath = options.sourcePath ? path.resolve(options.sourcePath) : null;
+  const seenFiles = options.seenFiles ?? new Set();
+  const importStack = options.importStack ?? [];
+
+  const importedMacros = [];
+  for (const specifier of extractMacroImports(source)) {
+    const resolvedPath = resolveMacroImport(specifier, sourcePath);
+    if (seenFiles.has(resolvedPath)) {
+      continue;
+    }
+
+    if (!fs.existsSync(resolvedPath)) {
+      throw new Error(`Could not resolve macro import: ${specifier}`);
+    }
+
+    seenFiles.add(resolvedPath);
+    const importedSource = fs.readFileSync(resolvedPath, "utf8");
+    const imported = loadMacroEnvironmentFromSource(importedSource, {
+      sourcePath: resolvedPath,
+      seenFiles,
+      importStack: [...importStack, resolvedPath]
+    });
+    importedMacros.push(...imported.macros);
+  }
+
+  const sourceWithoutImports = stripMacroImports(source);
+  const { macrosBlock, output } = stripMacrosBlock(sourceWithoutImports);
+  const { cleanedMacrosBlock, compileTimeVars } =
+    extractCompileTimeDeclares(macrosBlock);
+  const localMacros = parseMacrosFromBlock(cleanedMacrosBlock);
+
+  return {
+    output,
+    macros: [...localMacros, ...importedMacros],
+    compileTimeVars
+  };
+}
+
+export function compileDslSource(source, options = {}) {
+  const { output, macros, compileTimeVars } =
+    loadMacroEnvironmentFromSource(source, options);
+
+  COMPILE_TIME_VARS = compileTimeVars;
+
+  return expandMacros(output, macros);
+}
+
+export function compileDslFile(inputFile) {
+  const source = fs.readFileSync(inputFile, "utf8");
+  return compileDslSource(source, { sourcePath: inputFile });
+}
+
 if (isMain()) {
   const input = process.argv[2];
   const outputFile = process.argv[3] || "";
 
   if (!input || !fs.existsSync(input)) {
-    console.error("Uso: node compile.js <arquivo.dsljs.js>");
+    console.error("Uso: node compile.js <arquivo.dsljs>");
     process.exit(1);
   }
-
-  const source = fs.readFileSync(input, "utf8");
-
-  const { macrosBlock, output } = stripMacrosBlock(source);
-
-  const { cleanedMacrosBlock, compileTimeVars } =
-    extractCompileTimeDeclares(macrosBlock);
-
-  COMPILE_TIME_VARS = compileTimeVars;
-  console.log("COMPILE_TIME_VARS:", COMPILE_TIME_VARS);
-
-  const macros = parseMacrosFromBlock(cleanedMacrosBlock);
-  const finalOutput = expandMacros(output, macros);
+  const finalOutput = compileDslFile(input);
 
   if (outputFile) {
     const dir = path.dirname(outputFile);

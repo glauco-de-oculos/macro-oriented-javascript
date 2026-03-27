@@ -1,0 +1,143 @@
+{
+  "$schema": "https://raw.githubusercontent.com/martinring/tmlanguage/master/tmlanguage.json",
+  "name": "IDSL",
+  "scopeName": "source.idsl",
+  "patterns": [
+    { "include": "#jsKeywords" },
+    { "include": "#macrosBlockHeader" },
+    { "include": "#macroDefinition" },
+    { "include": "#symbolicMacroCall" },
+    { "include": "#macroBodyDelimiters" },
+    { "include": "#placeholder" },
+    { "include": "#macroStruct" },
+    { "include": "#macroThreeCall" },
+    { "include": "#macroTaggedTemplate" },
+    { "include": "#macroCallLine" },
+    { "include": "#structArrowLine" },
+    { "include": "source.js" }
+  ],
+  "repository": {
+    "macrosBlockHeader": {
+      "patterns": [
+        {
+          "name": "meta.macros.block.idsl",
+          "match": "^(\\s*)(macros)(\\s*:)(\\s*\\{)",
+          "captures": {
+            "2": { "name": "keyword.control.macros.idsl" },
+            "3": { "name": "punctuation.separator.key-value.idsl" },
+            "4": { "name": "punctuation.section.block.begin.idsl" }
+          }
+        }
+      ]
+    },
+    "macroDefinition": {
+      "patterns": [
+        {
+          "name": "meta.macro.definition.idsl",
+          "match": "^(\\s*)(\\$macro)\\s+(\\[>|[A-Za-z_$][A-Za-z0-9_$]*)",
+          "captures": {
+            "2": { "name": "keyword.control.macro.idsl" },
+            "3": { "name": "entity.name.function.macro.idsl" }
+          }
+        }
+      ]
+    },
+    "symbolicMacroCall": {
+      "patterns": [
+        {
+          "name": "entity.name.function.macro.idsl",
+          "match": "\\[>"
+        }
+      ]
+    },
+    "jsKeywords": {
+      "patterns": [
+        {
+          "name": "keyword.control.js",
+          "match": "\\b(import|from|let|const|var|return|export)\\b"
+        }
+      ]
+    },
+    "macroBodyDelimiters": {
+      "patterns": [
+        {
+          "name": "meta.macro.body.delimiter.idsl",
+          "match": "#\\(|\\)#",
+          "captures": {
+            "0": { "name": "punctuation.definition.macro-body.idsl" }
+          }
+        }
+      ]
+    },
+    "placeholder": {
+      "patterns": [
+        {
+          "name": "variable.parameter.placeholder.idsl",
+          "match": "\\$[A-Za-z_$][A-Za-z0-9_$]*"
+        }
+      ]
+    },
+    "macroStruct": {
+      "patterns": [
+        {
+          "name": "meta.struct.definition.idsl",
+          "match": "^(\\s*)(struct)\\s+([A-Za-z_$][A-Za-z0-9_$]*)(\\s*\\[)",
+          "captures": {
+            "2": { "name": "keyword.control.struct.idsl" },
+            "3": { "name": "entity.name.type.struct.idsl" },
+            "4": { "name": "punctuation.section.brackets.begin.idsl" }
+          }
+        }
+      ]
+    },
+    "macroThreeCall": {
+      "patterns": [
+        {
+          "name": "meta.macro.three-call.idsl",
+          "match": "^(\\s*)([A-Za-z_$][A-Za-z0-9_$]*)(\\s+)([A-Za-z_$][A-Za-z0-9_$]*)(\\.)([A-Za-z_$][A-Za-z0-9_$]*)",
+          "captures": {
+            "2": { "name": "entity.name.function.macro.idsl" },
+            "4": { "name": "variable.other.definition.idsl" },
+            "5": { "name": "punctuation.accessor.dot.idsl" },
+            "6": { "name": "support.class.idsl" }
+          }
+        }
+      ]
+    },
+    "macroTaggedTemplate": {
+      "patterns": [
+        {
+          "name": "meta.macro.tagged-template.idsl",
+          "match": "^(\\s*)([A-Za-z_$][A-Za-z0-9_$]*)(?=\\s*`)",
+          "captures": {
+            "2": { "name": "entity.name.function.macro.idsl" }
+          }
+        }
+      ]
+    },
+    "macroCallLine": {
+      "patterns": [
+        {
+          "name": "meta.macro.call.idsl",
+          "match": "^(\\s*)([A-Za-z_$][A-Za-z0-9_$]*)(?=\\s*\\()",
+          "captures": {
+            "2": { "name": "entity.name.function.macro.idsl" }
+          }
+        }
+      ]
+    },
+    "structArrowLine": {
+      "patterns": [
+        {
+          "name": "meta.struct.arrow.idsl",
+          "match": "^(\\s*\\])(\\s*=>)(\\s*\\{)",
+          "captures": {
+            "1": { "name": "punctuation.section.brackets.end.idsl" },
+            "2": { "name": "keyword.operator.arrow.idsl" },
+            "3": { "name": "punctuation.section.block.begin.idsl" }
+          }
+        }
+      ]
+    }
+  }
+}

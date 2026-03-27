@@ -1,0 +1,53 @@
+macros: {
+
+    $macro LOG $msg #(
+		console.log("[Macro Log]:", $msg);
+    )#
+
+    $macro style($text) #(
+		console.log($text)
+	)#
+
+    $macro struct $name[
+		$($attr : $val1),
+		$declarações
+	] => {
+		$($prop = $value)...
+	}
+    #(
+        const $name = function () {
+			const $`${$attr}_var` = $val1;
+			const teste_1 = $declarações[0];
+			return {
+				$attr: () => $`${$attr}_var`,
+				retorna_teste1: teste_1,
+				$($prop: $value,)...
+			}
+		}
+    )#
+
+}
+
+
+const lista_qualquer = [1, 2, 3];
+
+struct teste[
+	atributo: "teste_atributo",
+	lista_qualquer
+] => {
+	propriedade = "valor teste";
+}
+
+LOG teste
+
+style(/*css*/`
+    #mapa_container {
+        width: 100vw;
+        height: 100vh;
+    }
+    #mapa_container > img {
+        position: absolute;
+        width: 100%;
+        height: 100%
+    }
+`)

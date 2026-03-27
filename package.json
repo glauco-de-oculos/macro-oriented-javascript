@@ -2,21 +2,30 @@
   "name": "dsljs",
   "version": "0.1.0",
   "author": "Ícaro Glauco de Oliveira",
-  "description": "Macro system / DSL expander for JavaScript",
+  "description": "IDSL macro system and structural expander for JavaScript",
   "bin": {
-    "dsljs": "./bin/dsljs.js"
+    "dsljs": "./bin/dsljs.js",
+    "idsl": "./bin/dsljs.js"
   },
   "type": "module",
   "exports": {
     ".": "./src/parser.js",
-    "./vite": "./src/vite-plugin.js"
+    "./vite": "./src/vite-plugin.js",
+    "./eslint-config": "./eslint.config.js"
   },
   "scripts": {
-    "_example": "node src/parser.js example/example.dsljs.js"
+    "_example": "node src/parser.js example/example.dsljs",
+    "lint": "eslint .",
+    "postinstall": "node scripts/setup-vscode.js",
+    "shadow:example": "dsljs shadow example/example.dsljs",
+    "shadow:watch:example": "dsljs watch-shadow example/example.dsljs"
   },
   "license": "MIT",
   "dependencies": {
     "chokidar": "^5.0.0",
+    "@eslint/js": "^10.0.1",
+    "eslint": "^10.1.0",
+    "globals": "^17.4.0",
     "url": "^0.11.4"
   }
 }

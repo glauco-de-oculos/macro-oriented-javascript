@@ -1,0 +1,56 @@
+{
+  "name": "idsl-tools",
+  "displayName": "IDSL Tools",
+  "description": "Definition, hover, semantic highlighting and shadow sync for IDSL files.",
+  "version": "0.0.14",
+  "publisher": "local",
+  "license": "MIT",
+  "engines": {
+    "vscode": "^1.85.0"
+  },
+  "categories": [
+    "Programming Languages",
+    "Linters"
+  ],
+  "activationEvents": [
+    "onStartupFinished",
+    "onLanguage:idsl"
+  ],
+  "main": "./extension.cjs",
+  "contributes": {
+    "languages": [
+      {
+        "id": "idsl",
+        "aliases": [
+          "IDSL",
+          "idsl"
+        ],
+        "extensions": [
+          ".idsl",
+          ".dsljs"
+        ],
+        "configuration": "./language-configuration.json"
+      }
+    ],
+    "grammars": [
+      {
+        "language": "idsl",
+        "scopeName": "source.idsl",
+        "path": "./syntaxes/dsljs.tmLanguage.json"
+      }
+    ],
+    "iconThemes": [
+      {
+        "id": "vs-seti-idsl",
+        "label": "Seti + IDSL",
+        "path": "./icons/fileicons/vs-seti-idsl-icon-theme.json"
+      }
+    ],
+    "commands": [
+      {
+        "command": "idsl.syncShadow",
+        "title": "IDSL: Sync Shadow File"
+      }
+    ]
+  }
+}

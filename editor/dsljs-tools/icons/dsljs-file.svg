@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="IDSL file icon">
+  <defs>
+    <linearGradient id="sheet" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#18263a"/>
+      <stop offset="100%" stop-color="#0d1420"/>
+    </linearGradient>
+    <linearGradient id="accent" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#ffb24d"/>
+      <stop offset="100%" stop-color="#ff7a45"/>
+    </linearGradient>
+  </defs>
+  <path d="M14 4h25l11 11v37a8 8 0 0 1-8 8H14a8 8 0 0 1-8-8V12a8 8 0 0 1 8-8Z" fill="url(#sheet)"/>
+  <path d="M39 4l11 11H43a4 4 0 0 1-4-4V4Z" fill="#314264"/>
+  <rect x="11" y="21" width="42" height="24" rx="7" fill="#121a27" stroke="rgba(255,255,255,.08)"/>
+  <text x="32" y="31" text-anchor="middle" font-family="Segoe UI, Arial, sans-serif" font-size="9" font-weight="700" letter-spacing="1.2" fill="url(#accent)">ID</text>
+  <text x="32" y="41" text-anchor="middle" font-family="Segoe UI, Arial, sans-serif" font-size="9" font-weight="700" letter-spacing="1.2" fill="#67e8f9">SL</text>
+</svg>

@@ -1,10 +1,10 @@
 
-# Pgrtriter
+# IDSL
 pgr + tr + iter
 
 Programação estrutural iterativa.
 
-Pgrtriter é uma linguagem de transformação estrutural construída sobre JavaScript, distribuída neste pacote sob o nome DSLJS.
+IDSL é uma linguagem de transformação estrutural construída sobre JavaScript.
 
 Ela permite definir gramáticas próprias dentro do código e transformá-las, em tempo de compilação, em JavaScript puro e determinístico por meio da criação livre de macros. Não adiciona runtime. Opera como sistema de reescrita sintática.
 
@@ -16,7 +16,7 @@ O resultado final sempre é JavaScript padrão.
 
 Esta seção demonstra:
 
-- O código fonte em `example.dsljs.js`
+- O código fonte em `example.dsljs`
 - O código gerado em `example.output.js`
 - A explicação instrutiva de cada transformação
 
@@ -206,7 +206,7 @@ Transformação:
 
 # Conceito Central
 
-DSLJS separa dois domínios:
+IDSL separa dois domínios:
 
 1) Modelagem estrutural (livre)
 2) Geração de JavaScript (#( )#)

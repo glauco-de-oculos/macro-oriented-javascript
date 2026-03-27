@@ -1,0 +1,15 @@
+{
+  "iconDefinitions": {
+    "_idsl_file": {
+      "iconPath": "../dsljs-file.svg"
+    }
+  },
+  "fileExtensions": {
+    "dsljs": "_idsl_file",
+    "idsl": "_idsl_file"
+  },
+  "fileNames": {
+    ".dsljs": "_idsl_file",
+    ".idsl": "_idsl_file"
+  }
+}
