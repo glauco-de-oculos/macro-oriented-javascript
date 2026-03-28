@@ -1,1 +1,16 @@
-node_modules
+node_modules/
+
+# Build output
+dist/
+
+# Package artifacts
+*.tgz
+editor/dsljs-tools/*.vsix
+
+# Local editor files
+.vscode/tasks.json
+.vscode/extensions.json
+
+# Generated example/output files
+example/*.generated.ts
+saida.js

@@ -1,9 +1,29 @@
 {
-    "files.associations": {
-        "*.dsl.js": "javascript"
-    },
-    "[javascript]": {
-        "editor.semanticHighlighting.enabled": true
-    },
-    "javascript.validate.enable": false
+  "files.associations": {
+    "*.dsl.js": "javascript",
+    "*.idsl": "idsl",
+    "*.dsljs": "idsl"
+  },
+  "[javascript]": {
+    "editor.semanticHighlighting.enabled": true
+  },
+  "javascript.validate.enable": false,
+  "explorer.fileNesting.patterns": {
+    "*.idsl": "$(capture).generated.js",
+    "*.dsljs": "$(capture).generated.js"
+  },
+  "eslint.validate": [
+    "javascript",
+    "idsl"
+  ],
+  "eslint.probe": [
+    "javascript",
+    "idsl"
+  ],
+  "eslint.workingDirectories": [
+    {
+      "mode": "auto"
+    }
+  ],
+  "eslint.useFlatConfig": true
 }

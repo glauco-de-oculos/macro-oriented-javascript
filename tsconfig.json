@@ -1,0 +1,27 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+    "allowJs": true,
+    "checkJs": false,
+    "strict": false,
+    "skipLibCheck": true,
+    "verbatimModuleSyntax": true,
+    "noEmit": true
+  },
+  "include": [
+    "bin/**/*.js",
+    "eslint/**/*.js",
+    "scripts/**/*.js",
+    "src/**/*.js",
+    "eslint.config.js",
+    "eslint.config.typescript.js"
+  ],
+  "exclude": [
+    "dist",
+    "node_modules",
+    "example/**/*.generated.js",
+    "example/**/*.generated.ts"
+  ]
+}
