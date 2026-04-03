@@ -14,11 +14,11 @@
   ],
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/glauco-asked-plugin/macro-oriented-javascript.git"
+    "url": "git+https://github.com/glauco-de-oculos/macro-oriented-javascript.git"
   },
-  "homepage": "https://github.com/glauco-asked-plugin/macro-oriented-javascript#readme",
+  "homepage": "https://github.com/glauco-de-oculos/macro-oriented-javascript#readme",
   "bugs": {
-    "url": "https://github.com/glauco-asked-plugin/macro-oriented-javascript/issues"
+    "url": "https://github.com/glauco-de-oculos/macro-oriented-javascript/issues"
   },
   "bin": {
     "dsljs": "bin/dsljs.js",
