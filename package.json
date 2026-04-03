@@ -3,9 +3,26 @@
   "version": "0.1.0",
   "author": "Ícaro Glauco de Oliveira",
   "description": "IDSL macro system and structural expander for JavaScript",
+  "keywords": [
+    "dsl",
+    "macro",
+    "macros",
+    "javascript",
+    "vite",
+    "eslint",
+    "idsl"
+  ],
+  "homepage": "https://github.com/glauco-de-oculos/macro-oriented-javascript#readme",
+  "bugs": {
+    "url": "https://github.com/glauco-de-oculos/macro-oriented-javascript/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/glauco-de-oculos/macro-oriented-javascript.git"
+  },
   "bin": {
-    "dsljs": "./bin/dsljs.js",
-    "idsl": "./bin/dsljs.js"
+    "dsljs": "bin/dsljs.js",
+    "idsl": "bin/dsljs.js"
   },
   "type": "module",
   "exports": {
@@ -19,6 +36,20 @@
     "postinstall": "node scripts/setup-vscode.js",
     "shadow:example": "dsljs shadow example/example.dsljs",
     "shadow:watch:example": "dsljs watch-shadow example/example.dsljs"
+  },
+  "files": [
+    "README.md",
+    "LICENSE",
+    "bin",
+    "editor/dsljs-tools",
+    "eslint",
+    "eslint.config.js",
+    "eslint.config.typescript.js",
+    "scripts/setup-vscode.js",
+    "src"
+  ],
+  "engines": {
+    "node": ">=20"
   },
   "license": "MIT",
   "dependencies": {

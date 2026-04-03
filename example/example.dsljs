@@ -1,5 +1,7 @@
 macros: {
 
+	$macro [> $tag <] #( `<$tag>` )#
+
     $macro LOG $msg #(
 		console.log("[Macro Log]:", $msg);
     )#
@@ -28,6 +30,7 @@ macros: {
 
 }
 
+LOG [> div <]
 
 const lista_qualquer = [1, 2, 3];
 
