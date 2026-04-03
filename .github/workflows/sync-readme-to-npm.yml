@@ -54,13 +54,17 @@ jobs:
 
       - name: Commit release metadata
         if: steps.version-files.outputs.skip != 'true'
+        id: release
         shell: bash
         run: |
           VERSION="$(node -p "require('./package.json').version")"
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
           git add README.md package.json package-lock.json
           git commit -m "docs: sync npm README for v$VERSION"
-          git tag "v$VERSION"
+          git tag -a "v$VERSION" -m "v$VERSION"
 
       - name: Push commit and tag
         if: steps.version-files.outputs.skip != 'true'
-        run: git push origin HEAD:main --follow-tags
+        run: |
+          git push origin HEAD:main
+          git push origin "refs/tags/v${{ steps.release.outputs.version }}"
