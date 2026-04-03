@@ -52,7 +52,7 @@ function buildShadowFileContents(inputFile, expanded) {
   ].join("\n");
 }
 
-const PACKAGE_CANDIDATES = ["dsljs", "idsljs", "idsljs-macros"];
+const PACKAGE_CANDIDATES = ["@icaroglauco/dsljs", "dsljs", "idsljs", "idsljs-macros"];
 
 function findProjectRoot(startPath) {
   const resolvedStartPath = path.resolve(startPath);
@@ -137,7 +137,7 @@ function getParserPath(startPath) {
     return resolvedPackagePath;
   }
 
-  throw new Error("Could not find src/parser.js or resolve the dsljs package from the current file.");
+  throw new Error("Could not find src/parser.js or resolve the @icaroglauco/dsljs package from the current file.");
 }
 
 async function loadParser(startPath) {

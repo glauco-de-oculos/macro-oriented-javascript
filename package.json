@@ -1,6 +1,6 @@
 {
-  "name": "dsljs",
-  "version": "0.1.0",
+  "name": "@icaroglauco/dsljs",
+  "version": "0.1.1",
   "author": "Ícaro Glauco de Oliveira",
   "description": "IDSL macro system and structural expander for JavaScript",
   "keywords": [
@@ -12,13 +12,13 @@
     "eslint",
     "idsl"
   ],
-  "homepage": "https://github.com/glauco-de-oculos/macro-oriented-javascript#readme",
-  "bugs": {
-    "url": "https://github.com/glauco-de-oculos/macro-oriented-javascript/issues"
-  },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/glauco-de-oculos/macro-oriented-javascript.git"
+    "url": "git+https://github.com/glauco-asked-plugin/macro-oriented-javascript.git"
+  },
+  "homepage": "https://github.com/glauco-asked-plugin/macro-oriented-javascript#readme",
+  "bugs": {
+    "url": "https://github.com/glauco-asked-plugin/macro-oriented-javascript/issues"
   },
   "bin": {
     "dsljs": "bin/dsljs.js",
@@ -29,13 +29,6 @@
     ".": "./src/parser.js",
     "./vite": "./src/vite-plugin.js",
     "./eslint-config": "./eslint.config.js"
-  },
-  "scripts": {
-    "_example": "node src/parser.js example/example.dsljs",
-    "lint": "eslint .",
-    "postinstall": "node scripts/setup-vscode.js",
-    "shadow:example": "dsljs shadow example/example.dsljs",
-    "shadow:watch:example": "dsljs watch-shadow example/example.dsljs"
   },
   "files": [
     "README.md",
@@ -48,6 +41,16 @@
     "scripts/setup-vscode.js",
     "src"
   ],
+  "publishConfig": {
+    "access": "public"
+  },
+  "scripts": {
+    "_example": "node src/parser.js example/example.dsljs",
+    "lint": "eslint .",
+    "postinstall": "node scripts/setup-vscode.js",
+    "shadow:example": "dsljs shadow example/example.dsljs",
+    "shadow:watch:example": "dsljs watch-shadow example/example.dsljs"
+  },
   "engines": {
     "node": ">=20"
   },

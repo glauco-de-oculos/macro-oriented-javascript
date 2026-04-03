@@ -188,7 +188,7 @@ function setupEslintConfig() {
   const eslintConfigPath = path.join(consumerRoot, "eslint.config.mjs");
 
   const contents = [
-    'import dsljsConfig from "dsljs/eslint-config";',
+    'import dsljsConfig from "@icaroglauco/dsljs/eslint-config";',
     "",
     "export default dsljsConfig;",
     ""

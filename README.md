@@ -1,292 +1,378 @@
+# `@icaroglauco/dsljs`
 
-# IDSL
-pgr + tr + iter
+Compile-time macros for JavaScript.
 
-Programação estrutural iterativa.
+`@icaroglauco/dsljs` lets you define local DSLs inside a `.dsljs` file and expand them into plain JavaScript before runtime. The generated output is ordinary JavaScript with no additional runtime layer, which makes the tool useful for code generation, structural syntax experiments, and domain-specific authoring workflows.
 
-IDSL é uma linguagem de transformação estrutural construída sobre JavaScript.
+## Highlights
 
-Ela permite definir gramáticas próprias dentro do código e transformá-las, em tempo de compilação, em JavaScript puro e determinístico por meio da criação livre de macros. Não adiciona runtime. Opera como sistema de reescrita sintática.
+- Compile custom syntax to standard JavaScript
+- Keep macro definitions close to the code that uses them
+- Generate deterministic output with zero runtime overhead
+- Use the package from the CLI, from Vite, or programmatically
+- Add editor and ESLint support for `.dsljs` files
 
-O resultado final sempre é JavaScript padrão.
+## Installation
 
----
-
-# Ilustração pelos modelos em example/
-
-Esta seção demonstra:
-
-- O código fonte em `example.dsljs`
-- O código gerado em `example.output.js`
-- A explicação instrutiva de cada transformação
-
----
-
-# 1. Instanciação Estrutural (THREE)
-
-## Fonte (DSL)
-
-```dsl
-THREE scene.Scene()
-
-THREE camera.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000)
-
-if(true){
-    THREE mesh.BoxGeometry[0]
-}
-```
-
-## Saída Compilada
-
-```js
-const scene = new THREE.Scene()
-
-const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000)
-
-if(true){
-    const mesh = new THREE.BoxGeometry[0]
-}
-```
-
-## Explicação
-
-Formato DSL:
-
-```
-THREE variável.Tipo(argumentos)
-```
-
-Transformação aplicada:
-
-1. `$a` captura o nome da variável.
-2. `$b` captura o tipo dentro do namespace THREE.
-3. `$delim...` captura os argumentos ou delimitadores.
-4. A macro gera automaticamente:
-
-```
-const variável = new THREE.Tipo(argumentos)
-```
-
-Isso remove repetição estrutural e padroniza instanciações.
-
----
-
-# 2. Log Estrutural (LOG)
-
-## Fonte (DSL)
-
-```dsl
-LOG `Build completo com ${$(THREE scene.Scene())}`
-```
-
-## Saída Compilada
-
-```js
-console.log("[Macro Log]:", `Build completo com ${const scene = new THREE.Scene()}`);
-```
-
-## Explicação
-
-Formato DSL:
-
-```
-LOG expressão
-```
-
-Transformação:
-
-1. `$msg` captura a expressão completa.
-2. A macro envolve a expressão em um `console.log` padronizado.
-3. Qualquer expressão interna é expandida antes.
-
-Resultado final:
-
-```
-console.log("[Macro Log]:", expressão)
-```
-
----
-
-# 3. Estrutura Declarativa (struct)
-
-## Fonte (DSL)
-
-```dsl
-const lista_qualquer = [1,2,3,4]
-
-struct teste [
-    atributo: "teste_atributo",
-    lista_qualquer
-] => {
-    propriedade = "valor teste"
-}
-```
-
-## Saída Compilada
-
-```js
-const lista_qualquer = [1,2,3,4]
-
-const teste = function(){
-    const $attr_var = "teste_atributo";
-    const teste_1 = lista_qualquer[0];
-    return {
-        atributo: () => $attr_var,
-        propriedade: "valor teste",
-    }
-}
-```
-
-## Explicação
-
-Formato DSL:
-
-```
-struct Nome [
-    atributos
-] => {
-    propriedades derivadas
-}
-```
-
-Processo de transformação:
-
-1. `$name` captura o nome da estrutura.
-2. `$($attr : $val1)` captura pares atributo/valor.
-3. `$declarações` captura elementos adicionais.
-4. O bloco `=> { ... }` define propriedades derivadas.
-5. Dentro de `#( )#`, é gerada uma função encapsuladora.
-6. Cada atributo vira uma variável interna.
-7. São criados getters automáticos.
-8. As propriedades declaradas são adicionadas ao objeto retornado.
-
-Resultado: estrutura declarativa → função encapsulada com estado interno.
-
----
-
-# 4. Injeção de Bloco Literal (style)
-
-## Fonte (DSL)
-
-```dsl
-style (/*css*/`
-    #mapa_container {
-        width: 100vw;
-        height: 100vh;
-    }
-`)
-```
-
-## Saída Compilada
-
-```js
-console.log(/*css*/`
-    #mapa_container {
-        width: 100vw;
-        height: 100vh;
-    }
-`)
-```
-
-## Explicação
-
-Formato DSL:
-
-```
-style (texto)
-```
-
-Transformação:
-
-1. `$text` captura o bloco literal completo.
-2. O conteúdo é passado para o JavaScript final.
-3. Pode ser adaptado para injeção real de `<style>`.
-
----
-
-# Conceito Central
-
-IDSL separa dois domínios:
-
-1) Modelagem estrutural (livre)
-2) Geração de JavaScript (#( )#)
-
-Visualmente:
-
-[ Gramática criada pelo autor ]
-            ↓
-            #( )
-            ↓
-[ JavaScript final ]
-
----
-
-# Instalação
+For most projects this package should be installed as a development dependency:
 
 ```bash
-npm install dsljs
+npm install -D @icaroglauco/dsljs
 ```
 
----
+The package exposes:
 
-# Uso com Vite
+- `dsljs` and `idsl` CLI commands
+- `@icaroglauco/dsljs/vite` for Vite integration
+- `@icaroglauco/dsljs/eslint-config` for ESLint
+- the parser/compiler API from `@icaroglauco/dsljs`
+
+## Quick Start
+
+Create a file named `hello.dsljs`:
+
+```dsl
+macros: {
+
+  $macro LOG $msg #(
+    console.log("[Macro Log]:", $msg);
+  )#
+
+  $macro style($text) #(
+    console.log($text);
+  )#
+
+}
+
+const project = "dsljs";
+
+LOG `Build completed for ${project}`
+
+style(/*css*/`
+  .banner {
+    padding: 16px;
+    border: 1px solid #d0d7de;
+  }
+`)
+```
+
+Compile it:
+
+```bash
+npx dsljs hello.dsljs hello.js
+```
+
+Generated output:
+
+```js
+const project = "dsljs";
+
+console.log("[Macro Log]:", `Build completed for ${project}`);
+
+console.log(/*css*/`
+  .banner {
+    padding: 16px;
+    border: 1px solid #d0d7de;
+  }
+`);
+```
+
+## How It Works
+
+Each `.dsljs` source file can contain a `macros: { ... }` block. That block declares rewrite rules using `$macro`, and the rest of the file is expanded against those rules during compilation.
+
+At a high level:
+
+1. The compiler reads the `macros: { ... }` block.
+2. Macro definitions are parsed into rewrite rules.
+3. The remaining file is transformed.
+4. The final result is emitted as standard JavaScript.
+
+Macro definitions do not remain in the final output.
+
+## Professional Usage Examples
+
+### 1. Structural Logging and Build-Time CSS
+
+This pattern is useful when you want a concise authoring syntax while still shipping plain JavaScript:
+
+```dsl
+macros: {
+
+  $macro LOG $msg #(
+    console.log("[Macro Log]:", $msg);
+  )#
+
+  $macro style($text) #(
+    console.log($text);
+  )#
+
+}
+
+LOG `Starting dashboard build`
+
+style(/*css*/`
+  #dashboard {
+    display: grid;
+    gap: 24px;
+  }
+`)
+```
+
+Expanded JavaScript:
+
+```js
+console.log("[Macro Log]:", `Starting dashboard build`);
+
+console.log(/*css*/`
+  #dashboard {
+    display: grid;
+    gap: 24px;
+  }
+`);
+```
+
+### 2. Domain-Specific Factory Generation
+
+Macros can encode a business or application-specific construction pattern.
+
+Source:
+
+```dsl
+macros: {
+
+  $macro struct game $name[
+    types: $types,
+    events: $events
+  ] => {
+    $($prop = $value;)...
+  }
+  #(
+    const $name = function () {
+      const types = { $types };
+      const events = [ $events ];
+      const listeners = Object.fromEntries(
+        events.map(eventName => [eventName, []])
+      );
+
+      return {
+        types: () => types,
+        events: () => events,
+        listeners: () => listeners,
+        on(eventName, listener) {
+          if (!listeners[eventName]) {
+            listeners[eventName] = [];
+          }
+
+          listeners[eventName].push(listener);
+        },
+        emit(eventName, payload) {
+          for (const listener of listeners[eventName] ?? []) {
+            listener(payload);
+          }
+        },
+        $($prop: $value,)...
+      };
+    }
+  )#
+
+}
+
+struct game arena[
+  types: {
+    state: "GameState",
+    entity: "Entity",
+    player: "Player"
+  },
+  events: ["boot", "tick", "gameover"]
+] => {
+  version = "0.1.0";
+  initialScene = "forest";
+}
+
+const game = arena();
+game.emit("boot", { scene: game.initialScene });
+```
+
+This style is useful when you want a compact authoring format for repetitive object or module generation.
+
+### 3. HTML-Like Template Authoring
+
+Another good fit is markup-oriented generation:
+
+```dsl
+macros: {
+
+  $macro tag [
+    $tagname
+    { $($attr:$value,)... }
+    ( $inner )
+  ] #(
+    `<${$tagname}
+      $(
+      ${$attr}=${$value}
+      )...
+    >
+      ${$inner}
+    </${$tagname}>`
+  )#
+
+}
+
+const card = tag[
+  section
+  { class: "profile-card", id: "user-42" }
+  (
+    `<h2>Ana</h2><p>Platform Engineer</p>`
+  )
+];
+```
+
+That gives you a lightweight way to create project-specific view or content syntaxes without introducing a custom runtime.
+
+## CLI
+
+The package ships with the `dsljs` command.
+
+```bash
+dsljs <input.dsljs> [output.js]
+dsljs dist <srcDir> <outDir>
+dsljs watch <src> <out>
+dsljs run <file.dsljs> [...args]
+dsljs watch-run <file.dsljs> [...args]
+dsljs shadow <file.dsljs> [file.generated.js]
+dsljs watch-shadow <file.dsljs> [file.generated.js]
+```
+
+Common workflows:
+
+Compile a single file:
+
+```bash
+npx dsljs src/main.dsljs dist/main.js
+```
+
+Print the compiled JavaScript to stdout:
+
+```bash
+npx dsljs src/main.dsljs
+```
+
+Compile an entire directory:
+
+```bash
+npx dsljs dist src dist
+```
+
+Watch and rebuild files:
+
+```bash
+npx dsljs watch src dist
+```
+
+Generate a shadow file for editor tooling:
+
+```bash
+npx dsljs shadow src/main.dsljs src/main.generated.js
+```
+
+Run a DSL file directly after expansion:
+
+```bash
+npx dsljs run scripts/task.dsljs --env production
+```
+
+## Vite Integration
+
+Use the Vite plugin when your project imports `.dsljs` files directly.
+
+`vite.config.js`
 
 ```js
 import { defineConfig } from "vite";
-import dsljs from "dsljs/vite";
+import dsljs from "@icaroglauco/dsljs/vite";
 
 export default defineConfig({
   plugins: [dsljs()]
 });
 ```
 
-Arquivos .dsljs serão processados antes do bundler.
+Example module:
 
----
-
-# Estrutura do Pacote
-
-```
-dsljs/
-├── bin/
-├── example/
-├── src/
-│   ├── parser.js
-│   └── vite-plugin.js
-├── package.json
-└── README.md
+```js
+import "./startup.dsljs";
 ```
 
----
+The plugin expands `.dsljs` sources before Vite continues with the rest of the pipeline.
 
-# Configuração Obrigatória no VSCode
+## Programmatic API
 
-Criar pasta:
+The root package exports the compiler helpers from `src/parser.js`.
 
-.projeto/
-└── .vscode/
-    └── settings.json
+Compile a source string:
 
-Conteúdo:
+```js
+import { compileDslSource } from "@icaroglauco/dsljs";
 
-```json
-{
-    "files.associations": {
-        "*.dsl.js": "javascript"
-    },
-    "[javascript]": {
-        "editor.semanticHighlighting.enabled": true
-    },
-    "javascript.validate.enable": false
+const source = `
+macros: {
+  $macro LOG $msg #( console.log($msg); )#
 }
+
+LOG "hello"
+`;
+
+const output = compileDslSource(source);
+console.log(output);
 ```
 
-Necessário para evitar erros de LSP antes da expansão das macros.
+Compile from a file:
 
----
+```js
+import { compileDslFile } from "@icaroglauco/dsljs";
 
-# Observações
+const output = compileDslFile("src/main.dsljs");
+console.log(output);
+```
 
-- Opera somente em tempo de compilação
-- Não existe runtime adicional
-- O código final é JavaScript puro
+Low-level helpers such as `stripMacrosBlock`, `parseMacrosFromBlock`, and `expandMacros` are also exported for advanced workflows.
+
+## ESLint
+
+The package includes a ready-to-use flat config for `.dsljs` files:
+
+```js
+import dsljsConfig from "@icaroglauco/dsljs/eslint-config";
+
+export default dsljsConfig;
+```
+
+This config wires the custom processor and validates `.dsljs` sources through ESLint.
+
+## VS Code Support
+
+On install, the package tries to set up local VS Code support automatically by:
+
+- installing the bundled editor extension locally
+- updating `.vscode/settings.json`
+- updating `.vscode/extensions.json`
+- creating an ESLint config proxy if one does not exist
+- creating a minimal `jsconfig.json` if one does not exist
+
+If you need to skip this behavior, set the `DSLJS_SKIP_VSCODE_SETUP=1` environment variable before installation.
+
+The editor support is designed around `.dsljs` and `.idsl` files, while the Vite plugin currently targets `.dsljs` imports.
+
+## Repository Examples
+
+The repository includes real examples you can use as reference:
+
+- `example/example.dsljs`
+- `example/game.dsljs`
+
+## Notes
+
+- Expansion happens at compile time, not at runtime
+- Generated output is standard JavaScript
+- Macro design is intentionally flexible and low-level
+- The best results come from keeping macros small, explicit, and domain-focused
