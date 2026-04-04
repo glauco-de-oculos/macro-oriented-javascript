@@ -52,6 +52,25 @@ function copyDir(sourceDir, targetDir) {
   }
 }
 
+function ensureImportingTsExtensionsInConfig(configPath) {
+  const config = readJson(configPath, null);
+  if (!config || typeof config !== "object") return false;
+
+  config.compilerOptions =
+    config.compilerOptions && typeof config.compilerOptions === "object"
+      ? config.compilerOptions
+      : {};
+
+  if (config.compilerOptions.allowImportingTsExtensions === true) {
+    return false;
+  }
+
+  config.compilerOptions.allowImportingTsExtensions = true;
+  writeJson(configPath, config);
+  log(`Enabled allowImportingTsExtensions in ${configPath}`);
+  return true;
+}
+
 function getVsCodeExtensionsDirs() {
   const home = os.homedir();
   if (!home) return [];
@@ -142,16 +161,18 @@ function setupWorkspaceFiles() {
   settings["explorer.fileNesting.patterns"] = mergeObjectMap(
     settings["explorer.fileNesting.patterns"],
     {
-      "*.idsl": "$(capture).generated.js",
-      "*.dsljs": "$(capture).generated.js"
+      "*.idsl": "$(capture).generated.ts",
+      "*.dsljs": "$(capture).generated.ts"
     }
   );
   settings["eslint.validate"] = mergeUniqueStrings(settings["eslint.validate"], [
     "javascript",
+    "typescript",
     "idsl"
   ]);
   settings["eslint.probe"] = mergeUniqueStrings(settings["eslint.probe"], [
     "javascript",
+    "typescript",
     "idsl"
   ]);
   if (!Array.isArray(settings["eslint.workingDirectories"])) {
@@ -188,7 +209,7 @@ function setupEslintConfig() {
   const eslintConfigPath = path.join(consumerRoot, "eslint.config.mjs");
 
   const contents = [
-    'import dsljsConfig from "@icaroglauco/dsljs/eslint-config";',
+    'import dsljsConfig from "dsljs/eslint-config";',
     "",
     "export default dsljsConfig;",
     ""
@@ -208,17 +229,37 @@ function setupJsConfig() {
     .filter(filePath => exists(filePath));
 
   if (tsConfigPaths.length) {
+    ensureImportingTsExtensionsInConfig(tsConfigPaths[0]);
     log(`Keeping existing JS/TS config in ${tsConfigPaths[0]}`);
     return;
   }
 
-  const jsConfigPath = path.join(consumerRoot, "jsconfig.json");
+  const tsConfigPath = path.join(consumerRoot, "tsconfig.json");
   const contents = {
-    exclude: ["**/*.generated.js"]
+    compilerOptions: {
+      target: "ES2022",
+      module: "ESNext",
+      moduleResolution: "Bundler",
+      allowJs: true,
+      checkJs: false,
+      allowImportingTsExtensions: true,
+      strict: false,
+      noEmit: true,
+      skipLibCheck: true,
+      types: ["vite/client"]
+    },
+    include: [
+      "src/**/*.ts",
+      "src/**/*.js",
+      "scripts/**/*.mjs",
+      "vite.config.js",
+      "eslint.config.mjs"
+    ],
+    exclude: ["dist", "node_modules"]
   };
 
-  writeJson(jsConfigPath, contents);
-  log(`Created JS config to exclude generated files in ${jsConfigPath}`);
+  writeJson(tsConfigPath, contents);
+  log(`Created TypeScript config in ${tsConfigPath}`);
 }
 
 function shouldSkip() {

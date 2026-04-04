@@ -1,6 +1,6 @@
 {
-  "name": "@icaroglauco/dsljs",
-  "version": "0.1.2",
+  "name": "dsljs",
+  "version": "0.1.2-local",
   "author": "Ícaro Glauco de Oliveira",
   "description": "IDSL macro system and structural expander for JavaScript",
   "keywords": [
