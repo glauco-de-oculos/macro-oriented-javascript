@@ -904,7 +904,7 @@ function stripNestedDslInvocationsForLint(body) {
     const closeIndex = findBalancedSegmentEnd(body, openIndex, body[openIndex], closeChar);
     const segment = body.slice(cursor, closeIndex);
     const replacement = aliasName
-      ? `${lineIndent}const ${aliasName} = undefined;`
+      ? `${lineIndent}const ${aliasName} = undefined; void ${aliasName};`
       : `${lineIndent}void 0;`;
 
     result += preserveReplacementLineCount(segment, replacement);
